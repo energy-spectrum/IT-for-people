@@ -1,0 +1,6 @@
+{
+    "port": 8080,
+    "mongoURI": "", 
+    "tokenSecret": "",
+    "companyEmail": "it_for_people@mail.ru"
+}
