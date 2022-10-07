@@ -1,0 +1,38 @@
+
+
+.cursorPoint {
+    cursor: pointer;
+}
+
+.icons {
+    width: 30px;
+    height: 30px;
+}
+
+.textDecoration {
+    text-decoration: none;
+}
+
+.d-flex {
+    display: flex;
+}
+
+.w-100 {
+    width: 100%;
+}
+
+.backSilver {
+    background-color: silver;
+}
+
+.contentBetween {
+    justify-content: space-between;
+}
+
+.flexColumn {
+    flex-direction: column;
+}
+
+/* .backImage {
+    background-image: './images/back-images-2560x1440.jpg';
+} */
