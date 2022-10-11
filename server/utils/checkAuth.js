@@ -11,8 +11,8 @@ export default (req, res, next) => {
                 next()
             } catch (e) {
                 console.log(e)
-                res.status(500).json({
-                    message: "Erorr on server"
+                res.status(403).json({
+                    message: 'Нет доступа. Возможно токен просрочен'
                 })
             }
         } else {
@@ -23,7 +23,7 @@ export default (req, res, next) => {
     } catch (e) {
         console.log(e)
         res.status(500).json({
-            message: "Erorr on server"
+            message: 'Что-то пошло не так, попробуйте позже...'
         })
     }
 }

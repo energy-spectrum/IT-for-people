@@ -6,20 +6,6 @@ import config from 'config'
 
 
 class AuthController{
-    // async createToken(userID) {
-    //     const token = await jwt.sign(
-    //         {
-    //             _id: userID
-    //         },
-    //         config.get('tokenSecret'),
-    //         {
-    //             expiresIn: '1d'
-    //         }
-    //     )
-
-    //     return token
-    // }
-
     async register(req, res){
         try{
             const {fullName, email, password, division} = req.body;
@@ -27,14 +13,13 @@ class AuthController{
             const passwordHash = await bcrypt.hash(password, saltRounds)
             const user = await UserModel.create({fullName, email, password: passwordHash, division})
             
-            //const token = await createToken(user._id)
             const token = jwt.sign(
                 {
                     _id: user._id
                 },
                 config.get('tokenSecret'),
                 {
-                    expiresIn: '1d'
+                    expiresIn: '30d'
                 }
             )
             res.json({
@@ -58,14 +43,13 @@ class AuthController{
             const passwordHash = await bcrypt.hash(password, saltRounds)
             const expert = await ExpertModel.create({fullName, email, password: passwordHash})
             
-            //const token = await createToken(user._id)
             const token = jwt.sign(
                 {
                     _id: expert._id
                 },
                 config.get('tokenSecret'),
                 {
-                    expiresIn: '1d'
+                    expiresIn: '30d'
                 }
             )
             res.json({
@@ -91,14 +75,13 @@ class AuthController{
                     return res.status(404).json({message: "Неверный  пароль " + password + " " + expert.password});
                 }
 
-                //const token = createToken(expert._id)
                 const token = jwt.sign(
                     {
                         _id: expert._id
                     },
                     config.get('tokenSecret'),
                     {
-                        expiresIn: '1d'
+                        expiresIn: '30d'
                     }
                 )
 
@@ -120,14 +103,13 @@ class AuthController{
                 return res.status(404).json({message: "Неверный  пароль " + password + " " + user.password});
             }
             
-            //const token = createToken(user._id)
             const token = jwt.sign(
                 {
                     _id: user._id
                 },
                 config.get('tokenSecret'),
                 {
-                    expiresIn: '1d'
+                    expiresIn: '30d'
                 }
             )
             
@@ -147,8 +129,6 @@ class AuthController{
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'});
         }
     }
-
-    
 }
 
 export default new AuthController()

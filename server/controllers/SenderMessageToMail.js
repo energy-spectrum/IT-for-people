@@ -2,12 +2,12 @@ import nodemailer from 'nodemailer'
 import ExpertModel from "../Models/ExpertModel.js";
 import config from "config"
 
-const companyEmail = config.get("companyEmail")
+const transporterData = config.get("transporterData")
 var transporter = nodemailer.createTransport({
-  service: 'mail.ru',
+  service: transporterData.service,
   auth: {
-    user: companyEmail,
-    pass: 'uEpBNVZX0hnqfUbSNwuw'
+    user: transporterData.companyEmail,
+    pass: transporterData.pass
   }
 });
 
@@ -21,7 +21,7 @@ async function sendToExpertGroups(subject, message){
 
 function send(toEmail, subject, message){
     var mailOptions = {
-        from: companyEmail,
+        from: transporterData.companyEmail,
         to: toEmail,
         subject: subject,
         text: message
@@ -36,4 +36,4 @@ function send(toEmail, subject, message){
     });
 }
 
-export  {send, sendToExpertGroups};
+export  {send as sendEmail, sendToExpertGroups as sendEmailToExpertGroups};

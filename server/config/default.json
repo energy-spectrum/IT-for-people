@@ -1,6 +1,14 @@
 {
     "port": 8080,
-    "mongoURI": "", 
+    "mongoURI": "",
     "tokenSecret": "",
-    "companyEmail": "it_for_people@mail.ru"
+    
+    "transporterData" : {
+        "service": "mail.ru",
+
+        "companyEmail": "it_for_people@mail.ru",
+        "pass": ""
+    },
+
+    "fileNameToLastProposalNumber": "LastProposalNumber.txt"
 }

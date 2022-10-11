@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 
 const ProposalSchema = mongoose.Schema({
+    number: {
+        type: Number,
+        required: true
+    },
     title: {
         type: String,
         required: true
