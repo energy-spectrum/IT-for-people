@@ -13,7 +13,7 @@ const ProposalSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    userID: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true

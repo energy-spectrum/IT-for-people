@@ -1,23 +1,24 @@
-import ExpertModel from "../Models/ExpertModel.js";
-import ProposalModel from "../Models/ProposalModel.js";
-import UserModel from "../Models/UserModel.js";
+import ExpertModel from "../Models/ExpertModel.js"
+import ProposalModel from "../Models/ProposalModel.js"
+import UserModel from "../Models/UserModel.js"
 
 import fs from "fs"
 import excel from "excel4node"
 
-import config from "config";
+import config from "config"
 
-import { sendEmail, sendEmailToExpertGroups } from "./SenderMessageToMail.js";
+import { sendEmail, sendEmailToExpertGroups } from "./SenderMessageToMail.js"
+
+
+const filePathToLastProposalNumber = config.get("fileNameToLastProposalNumber")
 
 const createProposalNumber = () => {
-    const filePath = config.get("fileNameToLastProposalNumber");
-    const sNumber = fs.readFileSync(filePath, "utf-8")
+    const sNumber = fs.readFileSync(filePathToLastProposalNumber, "utf-8")
     return Number(sNumber) + 1
 }
 
 const writeLastProposalNumber = (number) => {
-    const filePath = config.get("fileNameToLastProposalNumber")
-    fs.writeFileSync(filePath, number.toString())
+    fs.writeFileSync(filePathToLastProposalNumber, number.toString())
 }
 //Когда-то понадобиться, если нужно будет получать номер заявки с начала
 const clearLastProposalNumber = () => {
@@ -29,10 +30,10 @@ const clearLastProposalNumber = () => {
 const toEcxelFile = async (proposals = []) => {
     try {
         // Create a new instance of a Workbook class
-        const workbook = new excel.Workbook();
+        const workbook = new excel.Workbook()
 
         // Add Worksheets to the workbook
-        const worksheet = workbook.addWorksheet('Sheet 1');
+        const worksheet = workbook.addWorksheet('Sheet 1')
 
         // Create a reusable style
         const style = workbook.createStyle({
@@ -40,28 +41,28 @@ const toEcxelFile = async (proposals = []) => {
                 color: '#000000',
                 size: 12
             },
-        });
+        })
 
         const rowWithColumnNames = 1
-        worksheet.cell(rowWithColumnNames, 1).string("Номер заявки").style(style);
-        worksheet.cell(rowWithColumnNames, 2).string("Название идеи").style(style);
-        worksheet.cell(rowWithColumnNames, 3).string("Описание").style(style);
-        worksheet.cell(rowWithColumnNames, 4).string("ФИО").style(style);
+        worksheet.cell(rowWithColumnNames, 1).string("Номер заявки").style(style)
+        worksheet.cell(rowWithColumnNames, 2).string("Название идеи").style(style)
+        worksheet.cell(rowWithColumnNames, 3).string("Описание").style(style)
+        worksheet.cell(rowWithColumnNames, 4).string("ФИО").style(style)
 
         for (let i = 0; i < proposals.length; i++) {
-            const row = i + rowWithColumnNames + 1;
-            worksheet.cell(row, 1).number(proposals[i].number).style(style);
-            worksheet.cell(row, 2).string(proposals[i].title).style(style);
-            worksheet.cell(row, 3).string(proposals[i].description).style(style);
+            const row = i + rowWithColumnNames + 1
+            worksheet.cell(row, 1).number(proposals[i].number).style(style)
+            worksheet.cell(row, 2).string(proposals[i].title).style(style)
+            worksheet.cell(row, 3).string(proposals[i].description).style(style)
 
-            const user = await UserModel.findById(proposals[i].userID).exec()
+            const user = await UserModel.findById(proposals[i].userId).exec()
             if (user) {
-                worksheet.cell(row, 4).string(user.fullName).style(style);
+                worksheet.cell(row, 4).string(user.fullName).style(style)
             }
         }
 
-        const filePath = 'D:\\Programming\\Web\\IT-for-people\\server\\Storage\\AllProposals.xlsx'
-        workbook.write(filePath);
+        const filePath = config.get('filePathToExcelFile')
+        workbook.write(filePath)
 
         return filePath
     } catch (err) {
@@ -70,10 +71,10 @@ const toEcxelFile = async (proposals = []) => {
 }
 
 class ProposalController {
-    async add(req, res){
-        try{
+    async add(req, res) {
+        try {
             const user = await UserModel.findById(req.userId).exec()
-            if(!user){
+            if (!user) {
                 return res.status(403).json({
                     message: "Нет доступа"
                 })
@@ -82,7 +83,12 @@ class ProposalController {
             const proposalNumber =  createProposalNumber()
             const {title, description} = req.body
             const NotConsidered = 0;
-            const proposal = await ProposalModel.create({number: proposalNumber, title, description, userID: user._id, status: NotConsidered})
+            const proposal = await ProposalModel.create({
+                number: proposalNumber, 
+                title, description, 
+                userId: user._id,
+                status: NotConsidered
+            })
             
             writeLastProposalNumber(proposalNumber)
 
@@ -93,9 +99,11 @@ class ProposalController {
                 proposalID: proposal._id,
                 proposalNumber
             })
-        } catch(e){
-            console.log(e)
-            res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
+        } catch(err){
+            console.log(err)
+            res.status(500).json({
+                message: 'Что-то пошло не так, попробуйте позже...'
+            })
         }
     }
     
@@ -116,9 +124,7 @@ class ProposalController {
         try {
             const proposals = await ProposalModel.find({})
             const filePath = await toEcxelFile(proposals)
-            // res.json({
-            //     message: "Все отлично"
-            // })
+            
             res.download(filePath)
         } catch (err) {
             console.log(err)
@@ -127,25 +133,25 @@ class ProposalController {
     }
 
     //Вспомогательная для понимания что находиться внутри БД
-    async getAll(req, res){
-        try{
+    async getAll(req, res) {
+        try {
             const proposals = await ProposalModel.find({})
             return res.json({
                 proposals
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
-    async getNextAccepted(req, res){
-        try{
+    async getNextAccepted(req, res) {
+        try {
             const {numberSkipped, numberProposals} = req.body
-            const Accepted = 1
+            const Accepted = config.get("status.Accepted")
             const query = ProposalModel.find({status: Accepted}).sort("_id").skip(numberSkipped).limit(numberProposals)
             query.exec((err, acceptedProposals) => {
-                if(err){
+                if (err) {
                     console.log(err)
                     return res.status(500).json({
                         message: 'Что-то пошло не так, попробуйте позже...'
@@ -156,19 +162,19 @@ class ProposalController {
                     acceptedProposals
                 })
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
-    async getNextNotConsidered(req, res){
-        try{
+    async getNextNotConsidered(req, res) {
+        try {
             const {numberSkipped, numberProposals} = req.body
             const NotConsidered = 0
             const query = ProposalModel.find({status: NotConsidered}).sort("_id").skip(numberSkipped).limit(numberProposals)
             query.exec((err, notConsideredProposals) => {
-                if(err){
+                if (err) {
                     console.log(err)
                     return res.status(500).json({
                         message: 'Что-то пошло не так, попробуйте позже...'
@@ -179,32 +185,32 @@ class ProposalController {
                     notConsideredProposals
                 })
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
     //  User  /////////////////////////////
-    async userGetAll(req, res){
-        try{
-            const proposals = await ProposalModel.find({userID: req.userId})
+    async userGetAll(req, res) {
+        try {
+            const proposals = await ProposalModel.find({userId: req.userId})
             return res.json({
                 proposals
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
-    async userGetNextAccepted(req, res){
-        try{
+    async userGetNextAccepted(req, res) {
+        try {
             const {numberSkipped, numberProposals} = req.body
             const Accepted = 1
-            const query = ProposalModel.find({userID: req.userId, status: Accepted}).sort("_id").skip(numberSkipped).limit(numberProposals)
+            const query = ProposalModel.find({userId: req.userId, status: Accepted}).sort("_id").skip(numberSkipped).limit(numberProposals)
             query.exec((err, acceptedProposals) => {
-                if(err){
+                if (err) {
                     console.log(err)
                     return res.status(500).json({
                         message: 'Что-то пошло не так, попробуйте позже...'
@@ -215,63 +221,54 @@ class ProposalController {
                     acceptedProposals
                 })
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
-    async userGetNextNotConsidered(req, res){
-        try{
-            const {numberSkipped, numberProposals} = req.body
+    async userGetNextNotConsidered(req, res) {
+        try {
             const NotConsidered = 0
-            const query = ProposalModel.find({userID: req.userId, status: NotConsidered}).sort("_id").skip(numberSkipped).limit(numberProposals)
-            query.exec((err, notConsideredProposals) => {
-                if(err){
-                    console.log(err)
-                    return res.status(500).json({
-                        message: 'Что-то пошло не так, попробуйте позже...'
-                    })
-                }
-
-                return res.json({
-                    notConsideredProposals
-                })
-            })
-        } catch(e){
-            console.log(e)
-            res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
-        }
-    }
-
-    async userGetNextRejected(req, res){
-        try{
+            const options = {
+                userId: req.userId,
+                status: NotConsidered
+            }
             const {numberSkipped, numberProposals} = req.body
-            const Rejected = -1
-            const query = ProposalModel.find({userID: req.userId, status: Rejected}).sort("_id").skip(numberSkipped).limit(numberProposals)
-            query.exec((err, rejectedProposals) => {
-                if(err){
-                    console.log(err)
-                    return res.status(500).json({
-                        message: 'Что-то пошло не так, попробуйте позже...'
-                    })
-                }
+            const notConsideredProposals = getCertainProposals(options, numberSkipped, numberProposals)
 
-                return res.json({
-                    rejectedProposals
-                })
+            return res.json({
+                notConsideredProposals
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
+    async userGetNextRejected(req, res) {
+        try {
+            const Rejected = -1
+            const options = {
+                userId: req.userId,
+                status: Rejected
+            }
+            const {numberSkipped, numberProposals} = req.body
+            const rejectedProposals = getCertainProposals(options, numberSkipped, numberProposals)
 
-    async updateStatus(req, res){
-        try{
+            return res.json({
+                rejectedProposals
+            })
+        } catch (err) {
+            console.log(err)
+            res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
+        }
+    }
+
+    async updateStatus(req, res) {
+        try {
             const expert = await ExpertModel.findById(req.userId)
-            if(!expert) {
+            if (!expert) {
                 return res.status(403).json({
                     message: "Нет доступа!"
                 })
@@ -286,14 +283,14 @@ class ProposalController {
 
             const idProposal = req.params.id
             const proposal = await ProposalModel.findByIdAndUpdate(idProposal, {status}, {new: true})
-            if(!proposal) {
+            if (!proposal) {
                 return res.status(404).json({
                     message: "Заявка не найдена!"
                 })
             }
 
-            const user = await UserModel.findById(proposal.userID)
-            if(!user) {
+            const user = await UserModel.findById(proposal.userId)
+            if (!user) {
                 return res.status(200).json({
                     success: true,
                     proposalStatus: proposal.status,
@@ -301,26 +298,51 @@ class ProposalController {
                 })
             }
             
-            const subject = "Статус заявки"
-            let message;
-            if (status === 1){
-                message = "Ваша заяка принята."
-            } else if(status === -1){
-                message = "Ваша заяка отклонена."
-            }
-            message += " Название идеи " + proposal.title + ".";
-            message += " Номер заявки " + proposal.number;
-            sendEmail(user.email, subject, message)
+            notifyUserOfStatusChange(proposal, user.email);
 
             return res.json({
                 success: true,
                 proposalStatus: proposal.status
             })
-        } catch(e){
-            console.log(e)
+        } catch (err) {
+            console.log(err)
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 }
+
+//options: {[userId: req.userId], status: status}
+const getCertainProposals = (options, numberSkipped, numberProposals) => {
+    const query = ProposalModel.find(options)//{[userId: req.userId], status: status})
+                                .sort("_id")
+                                .skip(numberSkipped)
+                                .limit(numberProposals)
+    query.exec((err, proposals) => {
+        if (err) {
+            throw err
+        }
+
+        return proposals
+    })
+}
+
+const notifyUserOfStatusChange = (proposal, userEmail) => {
+    const subject = "Статус заявки"
+
+    let message;
+    if (proposal.status === 1) {
+        message = "Ваша заяка принята."
+    } else if (proposal.status === -1) {
+        message = "Ваша заяка отклонена."
+    }
+    else {
+        throw 'У заявки должен быть статус либо "принято", либо "отклонено"!'
+    }
+    message += " Название идеи " + proposal.title + "."
+    message += " Номер заявки " + proposal.number
+
+    sendEmail(userEmail, subject, message)
+}
+
 
 export default new ProposalController()

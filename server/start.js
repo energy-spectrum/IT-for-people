@@ -1,7 +1,7 @@
 import express from "express"
 import mongoose from "mongoose"
-import { router } from "./routes/router.js";
 import config from "config"
+import { router } from "./routes/router.js"
 
 const PORT = config.get('port')
 const DB_URI = config.get('mongoURI')
@@ -18,8 +18,8 @@ const startApp = async () => {
             .catch((err) => console.log('MongoDB error', err))
 
         app.listen(PORT, () => {console.log("Server Ok")})
-    } catch(e) {
-        console.log(e)
+    } catch (err) {
+        console.log(err)
     }
 }
 

@@ -9,8 +9,8 @@ export default (req, res, next) => {
                 const decoded = jwt.verify(token, config.get('tokenSecret'))
                 req.userId = decoded._id
                 next()
-            } catch (e) {
-                console.log(e)
+            } catch (err) {
+                console.log(err)
                 res.status(403).json({
                     message: 'Нет доступа. Возможно токен просрочен'
                 })
@@ -20,8 +20,8 @@ export default (req, res, next) => {
                 message: 'Нет доступа'
             })
         }
-    } catch (e) {
-        console.log(e)
+    } catch (err) {
+        console.log(err)
         res.status(500).json({
             message: 'Что-то пошло не так, попробуйте позже...'
         })
