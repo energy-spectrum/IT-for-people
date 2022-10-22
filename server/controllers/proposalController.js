@@ -3,12 +3,11 @@ import ProposalModel from "../Models/ProposalModel.js"
 import UserModel from "../Models/UserModel.js"
 
 import fs from "fs"
-import excel from "excel4node"
 
 import config from "config"
 
 import { sendEmail, sendEmailToExpertGroups } from "./SenderMessageToMail.js"
-
+import writeToExcelFile from "../writeToExcelFile.js"
 
 const filePathToLastProposalNumber = config.get("fileNameToLastProposalNumber")
 
@@ -27,48 +26,7 @@ const clearLastProposalNumber = () => {
     fs.writeFileSync(filePath, startingValue)
 }
 
-const toEcxelFile = async (proposals = []) => {
-    try {
-        // Create a new instance of a Workbook class
-        const workbook = new excel.Workbook()
 
-        // Add Worksheets to the workbook
-        const worksheet = workbook.addWorksheet('Sheet 1')
-
-        // Create a reusable style
-        const style = workbook.createStyle({
-            font: {
-                color: '#000000',
-                size: 12
-            },
-        })
-
-        const rowWithColumnNames = 1
-        worksheet.cell(rowWithColumnNames, 1).string("Номер заявки").style(style)
-        worksheet.cell(rowWithColumnNames, 2).string("Название идеи").style(style)
-        worksheet.cell(rowWithColumnNames, 3).string("Описание").style(style)
-        worksheet.cell(rowWithColumnNames, 4).string("ФИО").style(style)
-
-        for (let i = 0; i < proposals.length; i++) {
-            const row = i + rowWithColumnNames + 1
-            worksheet.cell(row, 1).number(proposals[i].number).style(style)
-            worksheet.cell(row, 2).string(proposals[i].title).style(style)
-            worksheet.cell(row, 3).string(proposals[i].description).style(style)
-
-            const user = await UserModel.findById(proposals[i].userId).exec()
-            if (user) {
-                worksheet.cell(row, 4).string(user.fullName).style(style)
-            }
-        }
-
-        const filePath = config.get('filePathToExcelFile')
-        workbook.write(filePath)
-
-        return filePath
-    } catch (err) {
-        throw err
-    }
-}
 
 class ProposalController {
     async add(req, res) {
@@ -123,7 +81,7 @@ class ProposalController {
     async getAllProposalsInFile(req, res) {
         try {
             const proposals = await ProposalModel.find({})
-            const filePath = await toEcxelFile(proposals)
+            const filePath = await writeToExcelFile(proposals)
             
             res.download(filePath)
         } catch (err) {
