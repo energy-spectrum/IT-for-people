@@ -20,3 +20,4 @@ proposalRouter.get('/user/get-next-not-considered/', checkAuth, proposalControll
 proposalRouter.get('/user/get-next-rejected/', checkAuth, proposalController.userGetNextRejected)
 
 proposalRouter.patch('/update-status/:id', checkAuth, proposalController.updateStatus)
+proposalRouter.put('/like/:id', checkAuth, proposalController.likeProposal);

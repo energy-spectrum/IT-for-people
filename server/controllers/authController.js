@@ -26,9 +26,7 @@ class AuthController{
             })
         } catch(err) {
             console.log(err)
-            res.status(500).json({
-                message: 'Что-то пошло не так, попробуйте позже...'
-            })
+            res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
@@ -51,9 +49,7 @@ class AuthController{
             })
         } catch(err) {
             console.log(err)
-            res.status(500).json({
-                message: 'Что-то пошло не так, попробуйте позже...'
-            })
+            res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 
@@ -61,14 +57,10 @@ class AuthController{
         try {
             const {email, password} = req.body
             const expert = await ExpertModel.findOne({email})
-
             if (expert) {
                 const isPasswordValid = await bcrypt.compare(password, expert.password)
-
                 if (!isPasswordValid) {
-                    return res.status(404).json({
-                        message: "Неверный  пароль " + password + " " + expert.password
-                    })
+                    return res.status(404).json({message: "Неверный  пароль " + password + " " + expert.password})
                 }
 
                 const token = createToken(expert._id)
@@ -80,23 +72,19 @@ class AuthController{
             }
             
             const user = await UserModel.findOne({email})
-
             if (!user) {
-                return res.status(404).json({
-                    message: "Неверный логин "
-                });
+                return res.status(404).json({message: "Неверный логин "});
             }
              
             const isPasswordValid = await bcrypt.compare(password, user.password)
-            
             if (!isPasswordValid) {
-                return res.status(404).json({
-                    message: "Неверный  пароль " + password + " " + user.password
-                })
+                return res.status(404).json({message: "Неверный  пароль " + password + " " + user.password})
             }
             
             const token = createToken(user._id)
+            
             const {fullName, division} = user
+
             res.json({
                 isExpert: false,
                 userData: {
@@ -108,9 +96,7 @@ class AuthController{
             })
         } catch(err) {
             console.log(err)
-            res.status(500).json({
-                message: 'Что-то пошло не так, попробуйте позже...'
-            })
+            res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
 }

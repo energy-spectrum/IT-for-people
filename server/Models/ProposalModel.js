@@ -23,6 +23,13 @@ const ProposalSchema = mongoose.Schema({
         required: true
     },
     
+    likes: [ 
+        { 
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User'
+        } 
+    ],
+
     date: { 
         type: Date, 
         default: Date.now 

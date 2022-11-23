@@ -2,31 +2,11 @@ import ExpertModel from "../Models/ExpertModel.js"
 import ProposalModel from "../Models/ProposalModel.js"
 import UserModel from "../Models/UserModel.js"
 
-import fs from "fs"
 
-import config from "config"
+import { notifyUserAndExpertGroupOfAddProposal, notifyUserOfStatusChange } from "./SenderMessageToMail.js"
 
-import { sendEmail, sendEmailToExpertGroups } from "./SenderMessageToMail.js"
-import writeToExcelFile from "../writeToExcelFile.js"
-
-const filePathToLastProposalNumber = config.get("fileNameToLastProposalNumber")
-
-const createProposalNumber = () => {
-    const sNumber = fs.readFileSync(filePathToLastProposalNumber, "utf-8")
-    return Number(sNumber) + 1
-}
-
-const writeLastProposalNumber = (number) => {
-    fs.writeFileSync(filePathToLastProposalNumber, number.toString())
-}
-//Когда-то понадобиться, если нужно будет получать номер заявки с начала
-const clearLastProposalNumber = () => {
-    const filePath = config.get("filePathToLastProposalNumber")
-    const startingValue = -1;
-    fs.writeFileSync(filePath, startingValue)
-}
-
-
+import {createProposalNumber, writeLastProposalNumber, clearLastProposalNumber} from "../proposalNumberController.js"
+import config  from "config"
 
 class ProposalController {
     async add(req, res) {
@@ -49,10 +29,8 @@ class ProposalController {
             })
             
             writeLastProposalNumber(proposalNumber)
-
-            sendEmail(user.email, 'Статус заявки ' + proposal._id, 'Ваша заявка добавлена на рассмотрение экспертам. Номер вашей заявки ' + proposal._id)
-            await sendEmailToExpertGroups('Новая заявка ' + proposal._id, 'Заявка ожидает рассмотрение. Номер заявки ' + proposal._id)
-
+            notifyUserAndExpertGroupOfAddProposal(user.email, proposal)
+           
             return res.json({
                 proposalID: proposal._id,
                 proposalNumber
@@ -68,6 +46,7 @@ class ProposalController {
     async removeAll(req, res) {
         try {
             await ProposalModel.deleteMany()
+            clearLastProposalNumber()
             res.json({
                 message: 'Все заявки удалены'
             })
@@ -81,7 +60,7 @@ class ProposalController {
     async getAllProposalsInFile(req, res) {
         try {
             const proposals = await ProposalModel.find({})
-            const filePath = await writeToExcelFile(proposals)
+            const filePath = await toEcxelFile(proposals)
             
             res.download(filePath)
         } catch (err) {
@@ -107,18 +86,10 @@ class ProposalController {
         try {
             const {numberSkipped, numberProposals} = req.body
             const Accepted = config.get("status.Accepted")
-            const query = ProposalModel.find({status: Accepted}).sort("_id").skip(numberSkipped).limit(numberProposals)
-            query.exec((err, acceptedProposals) => {
-                if (err) {
-                    console.log(err)
-                    return res.status(500).json({
-                        message: 'Что-то пошло не так, попробуйте позже...'
-                    })
-                }
 
-                return res.json({
-                    acceptedProposals
-                })
+            const acceptedProposals = await getCertainProposals({status: Accepted}, numberSkipped, numberProposals)
+            return res.json({
+                acceptedProposals
             })
         } catch (err) {
             console.log(err)
@@ -129,19 +100,11 @@ class ProposalController {
     async getNextNotConsidered(req, res) {
         try {
             const {numberSkipped, numberProposals} = req.body
-            const NotConsidered = 0
-            const query = ProposalModel.find({status: NotConsidered}).sort("_id").skip(numberSkipped).limit(numberProposals)
-            query.exec((err, notConsideredProposals) => {
-                if (err) {
-                    console.log(err)
-                    return res.status(500).json({
-                        message: 'Что-то пошло не так, попробуйте позже...'
-                    })
-                }
-
-                return res.json({
-                    notConsideredProposals
-                })
+            const NotConsidered = config.get("status.NotConsidered")
+            
+            const notConsideredProposals = await getCertainProposals({status: NotConsidered}, numberSkipped, numberProposals)
+            return res.json({
+                notConsideredProposals
             })
         } catch (err) {
             console.log(err)
@@ -165,19 +128,15 @@ class ProposalController {
     async userGetNextAccepted(req, res) {
         try {
             const {numberSkipped, numberProposals} = req.body
-            const Accepted = 1
-            const query = ProposalModel.find({userId: req.userId, status: Accepted}).sort("_id").skip(numberSkipped).limit(numberProposals)
-            query.exec((err, acceptedProposals) => {
-                if (err) {
-                    console.log(err)
-                    return res.status(500).json({
-                        message: 'Что-то пошло не так, попробуйте позже...'
-                    })
-                }
+            const Accepted = config.get("status.Accepted")
+            const options = {
+                userId: req.userId,
+                status: Accepted
+            }
 
-                return res.json({
-                    acceptedProposals
-                })
+            const acceptedProposals = await getCertainProposals(options, numberSkipped, numberProposals)
+            return res.json({
+                acceptedProposals
             })
         } catch (err) {
             console.log(err)
@@ -187,14 +146,14 @@ class ProposalController {
 
     async userGetNextNotConsidered(req, res) {
         try {
-            const NotConsidered = 0
+            const {numberSkipped, numberProposals} = req.body
+            const NotConsidered = config.get("status.NotConsidered")
             const options = {
                 userId: req.userId,
                 status: NotConsidered
             }
-            const {numberSkipped, numberProposals} = req.body
-            const notConsideredProposals = getCertainProposals(options, numberSkipped, numberProposals)
-
+            
+            const notConsideredProposals = await getCertainProposals(options, numberSkipped, numberProposals)
             return res.json({
                 notConsideredProposals
             })
@@ -206,14 +165,14 @@ class ProposalController {
 
     async userGetNextRejected(req, res) {
         try {
-            const Rejected = -1
+            const {numberSkipped, numberProposals} = req.body
+            const Rejected = config.get("status.Rejected")
             const options = {
                 userId: req.userId,
                 status: Rejected
             }
-            const {numberSkipped, numberProposals} = req.body
-            const rejectedProposals = getCertainProposals(options, numberSkipped, numberProposals)
-
+            
+            const rejectedProposals = await getCertainProposals(options, numberSkipped, numberProposals)
             return res.json({
                 rejectedProposals
             })
@@ -267,40 +226,39 @@ class ProposalController {
             res.status(500).json({message: 'Что-то пошло не так, попробуйте позже...'})
         }
     }
+
+    async likeProposal(req, res) {
+        try {
+            const proposalId = req.params.id;
+            const userId = req.userId;
+            let proposal = await ProposalModel.findById(proposalId);
+            const candidate = proposal.likes.find(like => like.toString() === userId);
+
+            if (candidate) {
+                await ProposalModel.findByIdAndUpdate(proposalId, {$pull: {likes: userId}});
+            } else {
+                await ProposalModel.findByIdAndUpdate(proposalId, {$push: {likes: userId}});
+            }
+
+            console.log(proposal);
+            res.json({
+                message: proposal.likes
+            })
+        } catch (e) {
+            console.log(e);
+            res.status(500).json({message: "Что-то пошло не так, попробуйте позже..."});
+        }
+    }
 }
 
 //options: {[userId: req.userId], status: status}
-const getCertainProposals = (options, numberSkipped, numberProposals) => {
+const getCertainProposals = async (options, numberSkipped, numberProposals) => {
     const query = ProposalModel.find(options)//{[userId: req.userId], status: status})
                                 .sort("_id")
                                 .skip(numberSkipped)
                                 .limit(numberProposals)
-    query.exec((err, proposals) => {
-        if (err) {
-            throw err
-        }
-
-        return proposals
-    })
+    const proposals = await query.exec()
+    return proposals
 }
-
-const notifyUserOfStatusChange = (proposal, userEmail) => {
-    const subject = "Статус заявки"
-
-    let message;
-    if (proposal.status === 1) {
-        message = "Ваша заяка принята."
-    } else if (proposal.status === -1) {
-        message = "Ваша заяка отклонена."
-    }
-    else {
-        throw 'У заявки должен быть статус либо "принято", либо "отклонено"!'
-    }
-    message += " Название идеи " + proposal.title + "."
-    message += " Номер заявки " + proposal.number
-
-    sendEmail(userEmail, subject, message)
-}
-
 
 export default new ProposalController()

@@ -11,7 +11,30 @@ const transporter = nodemailer.createTransport({
   }
 })
 
-const sendToExpertGroups = async (subject, message) => {
+const notifyUserAndExpertGroupOfAddProposal = async (userEmail, proposal) => {
+    send(userEmail, 'Статус заявки ' + proposal._id, 'Ваша заявка добавлена на рассмотрение экспертам. Номер вашей заявки ' + proposal._id)
+    await sendToExpertGroup('Новая заявка ' + proposal._id, 'Добавлена новая заявка. Номер заявки ' + proposal._id)
+}
+
+const notifyUserOfStatusChange = (proposal, userEmail) => {
+    const subject = "Статус заявки"
+
+    let message;
+    if (proposal.status === 1) {
+        message = "Ваша заяка принята."
+    } else if (proposal.status === -1) {
+        message = "Ваша заяка отклонена."
+    }
+    else {
+        throw 'У заявки должен быть статус либо "принято", либо "отклонено"!'
+    }
+    message += " Название идеи " + proposal.title + "."
+    message += " Номер заявки " + proposal.number
+
+    send(userEmail, subject, message)
+}
+
+const sendToExpertGroup = async (subject, message) => {
     const experts = await ExpertModel.find({})
 
     for (let i = 0; i < experts.length; i++) {
@@ -27,13 +50,13 @@ const send = (toEmail, subject, message) => {
         text: message
     }
       
-    transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-            console.log(err)
-        } else {
-            console.log('Email sent: ' + info.response)
-        }
-    })
+    // transporter.sendMail(mailOptions, (err, info) => {
+    //     if (err) {
+    //         console.log(err)
+    //     } else {
+    //         console.log('Email sent: ' + info.response)
+    //     }
+    // })
 }
 
-export  {send as sendEmail, sendToExpertGroups as sendEmailToExpertGroups}
+export  {notifyUserAndExpertGroupOfAddProposal, notifyUserOfStatusChange}

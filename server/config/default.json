@@ -1,0 +1,25 @@
+{
+    "port": 8080,
+    "mongoURI": "mongodb+srv://LernBackend:u9p-Ki3-qtu-zFr@cluster0.w0uvc9h.mongodb.net/IT_for_people?retryWrites=true&w=majority",
+    
+    "saltRounds": 10,
+    "tokenSecret": "Victoria’s Secret",
+
+    "filePathToExcelFile": "D:\\Programming\\Web\\IT-for-people\\server\\Storage\\AllProposals.xlsx",
+
+    "status": {
+        "Rejected": -1,
+        "NotConsidered": 0,
+        "Accepted": 1
+    },
+
+
+    "transporterData": {
+        "service": "mail.ru",
+
+        "companyEmail": "it_for_people@mail.ru",
+        "pass": "uEpBNVZX0hnqfUbSNwuw"
+    },
+
+    "fileNameToLastProposalNumber": "LastProposalNumber.txt"
+}
