@@ -5,12 +5,15 @@
   "main": "start.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon start.js"
+    "server": "nodemon start.js",
+    "client": "npm start --prefix ../Frontend",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^5.0.1",
+    "concurrently": "^7.6.0",
     "config": "^3.3.8",
     "dotenv": "^16.0.3",
     "excel4node": "^1.8.0",
